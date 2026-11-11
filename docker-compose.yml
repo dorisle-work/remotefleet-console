@@ -1,0 +1,53 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: remotefleet_backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=remotefleet
+      - DB_PASSWORD=Secret_DB_Password_2026
+      - DB_NAME=remotefleet_db
+      - MASTER_VAULT_KEY=${MASTER_VAULT_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      - API_KEY=${API_KEY:-remotefleet-dev-key-2026}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: remotefleet_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: remotefleet
+      POSTGRES_PASSWORD: Secret_DB_Password_2026
+      POSTGRES_DB: remotefleet_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3001
+        VITE_WS_URL: http://localhost:3001
+    container_name: remotefleet_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
